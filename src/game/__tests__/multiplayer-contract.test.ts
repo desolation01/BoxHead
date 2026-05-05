@@ -82,14 +82,19 @@ describe("GameScene multiplayer hooks", () => {
 
     expect(main).toContain("mode: Phaser.Scale.RESIZE");
     expect(html).toContain("touch-controls");
+    expect(html).toContain("orientation-lock");
     expect(source).toContain("createTouchControls");
     expect(source).toContain("applyResponsiveCamera");
     expect(source).toContain("this.cameras.main.setZoom(zoom)");
+    expect(source).toContain("updateOrientationLock");
+    expect(source).toContain("this.orientationBlocked");
     expect(source).toContain("touchMoveStick");
     expect(source).toContain("touchAimStick");
     expect(source).toContain("this.touchShooting");
     expect(source).toContain("const movement = this.getMovementVector()");
     expect(styles).toContain(".touch-stick");
+    expect(styles).toContain(".orientation-lock");
+    expect(styles).toContain("@media (orientation: landscape)");
   });
 
   it("targets and damages remote players from the host enemy simulation", () => {

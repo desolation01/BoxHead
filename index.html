@@ -43,10 +43,17 @@
           </div>
         </div>
       </div>
+      <div id="orientation-lock" class="orientation-lock is-hidden" aria-hidden="true">
+        <div class="orientation-lock__panel">
+          <div class="orientation-lock__icon">↻</div>
+          <h1>Rotate to Landscape</h1>
+          <p>Blockhead is built for wide-screen play on mobile.</p>
+        </div>
+      </div>
       <div id="menu" class="menu"></div>
     </div>
     <script>
-      window.BOXHEAD_BUILD = "2026-05-05-cache-refresh-1";
+      window.BOXHEAD_BUILD = "2026-05-05-landscape-lock-1";
 
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.getRegistrations()

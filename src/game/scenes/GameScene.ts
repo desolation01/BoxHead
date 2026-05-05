@@ -145,10 +145,13 @@ export class GameScene extends Phaser.Scene {
   private bossHpFillEl: HTMLElement | null = null;
   private menuEl: HTMLElement | null = null;
   private touchControlsEl: HTMLElement | null = null;
+  private orientationLockEl: HTMLElement | null = null;
   private touchMoveStick: TouchStickState = { pointerId: null, vector: new Phaser.Math.Vector2(), knob: null };
   private touchAimStick: TouchStickState = { pointerId: null, vector: new Phaser.Math.Vector2(), knob: null };
   private touchShooting = false;
   private touchWeaponQueued = false;
+  private orientationBlocked = false;
+  private orientationPausedPhysics = false;
   private removeTouchControlListeners: Array<() => void> = [];
   private health = 100;
   private score = 0;
@@ -200,6 +203,7 @@ export class GameScene extends Phaser.Scene {
     this.spectatorNameEl = document.querySelector("#spectator-name");
     this.pvpBoardEl = document.querySelector("#pvp-board");
     this.touchControlsEl = document.querySelector("#touch-controls");
+    this.orientationLockEl = document.querySelector("#orientation-lock");
     this.menuEl?.classList.add("is-hidden");
     this.spectatorBarEl?.classList.add("is-hidden");
     this.pvpBoardEl?.classList.add("is-hidden");
@@ -210,11 +214,13 @@ export class GameScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.applyResponsiveCamera, this);
     });
+    this.updateOrientationLock();
     this.updateHud();
   }
 
   update(time: number, delta: number): void {
     if (this.gameOver) return;
+    if (this.orientationBlocked) return;
 
     this.applyPendingSnapshot();
 
@@ -263,6 +269,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private resetRunState(): void {
+    this.physics.resume();
     this.health = 100;
     this.score = 0;
     this.waveNumber = STARTING_WAVE;
@@ -288,6 +295,8 @@ export class GameScene extends Phaser.Scene {
     this.spectating = false;
     this.spectatorTargets = [];
     this.spectatorIndex = 0;
+    this.orientationBlocked = false;
+    this.orientationPausedPhysics = false;
     this.resetTouchControls();
     this.ammo = new Map(WEAPONS.map((weapon) => [weapon.key, 0]));
   }
@@ -355,12 +364,41 @@ export class GameScene extends Phaser.Scene {
     const height = this.scale.height;
     const isMobileViewport = width <= 760 || height <= 520;
     const isPortrait = height > width;
-    const zoom = isMobileViewport ? (isPortrait ? 1.34 : 1.16) : 1;
-    const deadzoneWidth = isMobileViewport ? Math.min(110, width * 0.28) : 180;
-    const deadzoneHeight = isMobileViewport ? Math.min(86, height * 0.18) : 120;
+    const zoom = isMobileViewport ? (isPortrait ? 1.25 : 1.34) : 1;
+    const deadzoneWidth = isMobileViewport ? Math.min(150, width * 0.24) : 180;
+    const deadzoneHeight = isMobileViewport ? Math.min(72, height * 0.16) : 120;
 
     this.cameras.main.setZoom(zoom);
     this.cameras.main.setDeadzone(deadzoneWidth, deadzoneHeight);
+    this.updateOrientationLock();
+  }
+
+  private updateOrientationLock(): void {
+    const width = this.scale.width;
+    const height = this.scale.height;
+    const shouldBlock = this.isMobileViewport() && height > width;
+    this.orientationBlocked = shouldBlock;
+    this.orientationLockEl?.classList.toggle("is-hidden", !shouldBlock);
+    this.orientationLockEl?.setAttribute("aria-hidden", shouldBlock ? "false" : "true");
+    this.touchControlsEl?.classList.toggle("is-hidden", shouldBlock || this.gameOver || this.spectating);
+    this.hudEl?.classList.toggle("is-orientation-blocked", shouldBlock);
+    this.bossHudEl?.classList.toggle("is-orientation-blocked", shouldBlock);
+
+    if (shouldBlock) {
+      this.resetTouchControls();
+      this.player?.setVelocity(0, 0);
+      if (!this.orientationPausedPhysics) {
+        this.physics.pause();
+        this.orientationPausedPhysics = true;
+      }
+    } else if (this.orientationPausedPhysics && !this.gameOver) {
+      this.physics.resume();
+      this.orientationPausedPhysics = false;
+    }
+  }
+
+  private isMobileViewport(): boolean {
+    return this.scale.width <= 760 || this.scale.height <= 520 || window.matchMedia("(pointer: coarse)").matches;
   }
 
   private createRemotePlayers(): void {

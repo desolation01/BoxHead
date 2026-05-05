@@ -94,6 +94,11 @@ canvas {
   display: none;
 }
 
+.hud.is-orientation-blocked,
+.boss-hud.is-orientation-blocked {
+  display: none;
+}
+
 .hud__cluster {
   display: flex;
   gap: 8px;
@@ -400,6 +405,54 @@ canvas {
   font-weight: 900;
 }
 
+.orientation-lock {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(225, 182, 82, 0.16), transparent 34%),
+    rgba(10, 10, 9, 0.94);
+}
+
+.orientation-lock.is-hidden {
+  display: none;
+}
+
+.orientation-lock__panel {
+  width: min(340px, 100%);
+  padding: 18px;
+  border: 2px solid rgba(244, 236, 210, 0.22);
+  background: rgba(23, 23, 19, 0.92);
+  color: #f4ecd2;
+  text-align: center;
+}
+
+.orientation-lock__icon {
+  margin-bottom: 8px;
+  color: #e1b652;
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.orientation-lock h1 {
+  margin: 0 0 8px;
+  color: #f7e7b1;
+  font-size: 22px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.orientation-lock p {
+  margin: 0;
+  color: #c8c0a6;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 @media (hover: none), (pointer: coarse), (max-width: 760px) {
   .touch-controls:not(.is-hidden) {
     display: flex;
@@ -407,6 +460,52 @@ canvas {
 
   .boss-hud {
     bottom: calc(124px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (orientation: landscape) and (hover: none), (orientation: landscape) and (pointer: coarse), (orientation: landscape) and (max-height: 520px) {
+  .hud {
+    top: max(5px, env(safe-area-inset-top));
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+  }
+
+  .hud__cluster {
+    gap: 4px;
+  }
+
+  .hud span {
+    padding: 4px 6px;
+    font-size: 8px;
+  }
+
+  .touch-controls {
+    padding: 0 max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+
+  .touch-stick {
+    width: 78px;
+    height: 78px;
+  }
+
+  .touch-stick__knob {
+    width: 32px;
+    height: 32px;
+  }
+
+  .touch-weapon {
+    width: 38px;
+    height: 38px;
+    margin-bottom: 20px;
+    font-size: 12px;
+  }
+
+  .touch-actions {
+    gap: 8px;
+  }
+
+  .boss-hud {
+    bottom: calc(86px + env(safe-area-inset-bottom));
   }
 }
 
