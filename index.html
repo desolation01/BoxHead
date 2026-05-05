@@ -45,7 +45,7 @@
       </div>
       <div id="orientation-lock" class="orientation-lock is-hidden" aria-hidden="true">
         <div class="orientation-lock__panel">
-          <div class="orientation-lock__icon">↻</div>
+          <div class="orientation-lock__icon">ROTATE</div>
           <h1>Rotate to Landscape</h1>
           <p>Blockhead is built for wide-screen play on mobile.</p>
         </div>
@@ -53,7 +53,17 @@
       <div id="menu" class="menu"></div>
     </div>
     <script>
-      window.BOXHEAD_BUILD = "2026-05-05-landscape-lock-1";
+      window.BOXHEAD_BUILD = "2026-05-05-force-refresh-2";
+
+      try {
+        var previousBuild = window.localStorage.getItem("boxhead-build");
+        if (previousBuild && previousBuild !== window.BOXHEAD_BUILD && !window.location.search.includes("fresh=")) {
+          window.localStorage.setItem("boxhead-build", window.BOXHEAD_BUILD);
+          window.location.replace(window.location.pathname + "?fresh=" + encodeURIComponent(window.BOXHEAD_BUILD));
+        } else {
+          window.localStorage.setItem("boxhead-build", window.BOXHEAD_BUILD);
+        }
+      } catch (_) {}
 
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.getRegistrations()
