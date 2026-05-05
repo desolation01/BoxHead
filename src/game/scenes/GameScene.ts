@@ -205,6 +205,11 @@ export class GameScene extends Phaser.Scene {
     this.pvpBoardEl?.classList.add("is-hidden");
     this.touchControlsEl?.classList.remove("is-hidden");
     this.hudEl?.classList.remove("is-hidden");
+    this.applyResponsiveCamera();
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.applyResponsiveCamera, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off(Phaser.Scale.Events.RESIZE, this.applyResponsiveCamera, this);
+    });
     this.updateHud();
   }
 
@@ -339,10 +344,23 @@ export class GameScene extends Phaser.Scene {
     this.player.body!.setSize(30, 28);
     this.player.body!.setOffset(11, 7);
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-    this.cameras.main.setDeadzone(180, 120);
+    this.applyResponsiveCamera();
     this.playerWeapon = this.add.image(this.player.x, this.player.y, HELD_WEAPON_TEXTURES[this.currentWeapon.key]);
     this.playerWeapon.setOrigin(0.15, 0.5);
     this.playerWeapon.setDepth(4.4);
+  }
+
+  private applyResponsiveCamera(): void {
+    const width = this.scale.width;
+    const height = this.scale.height;
+    const isMobileViewport = width <= 760 || height <= 520;
+    const isPortrait = height > width;
+    const zoom = isMobileViewport ? (isPortrait ? 1.34 : 1.16) : 1;
+    const deadzoneWidth = isMobileViewport ? Math.min(110, width * 0.28) : 180;
+    const deadzoneHeight = isMobileViewport ? Math.min(86, height * 0.18) : 120;
+
+    this.cameras.main.setZoom(zoom);
+    this.cameras.main.setDeadzone(deadzoneWidth, deadzoneHeight);
   }
 
   private createRemotePlayers(): void {
@@ -492,7 +510,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateTouchKnob(stick: TouchStickState): void {
-    const distance = 34;
+    const distance = 28;
     stick.knob?.style.setProperty("--knob-x", `${Math.round(stick.vector.x * distance)}px`);
     stick.knob?.style.setProperty("--knob-y", `${Math.round(stick.vector.y * distance)}px`);
   }

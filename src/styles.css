@@ -35,6 +35,8 @@ body {
 
 canvas {
   display: block;
+  width: 100vw;
+  height: 100vh;
   touch-action: none;
 }
 
@@ -195,15 +197,21 @@ canvas {
 
 @media (max-width: 680px) {
   .hud {
-    top: 8px;
-    left: 8px;
-    right: 8px;
+    top: max(6px, env(safe-area-inset-top));
+    left: max(6px, env(safe-area-inset-left));
+    right: max(6px, env(safe-area-inset-right));
+    gap: 6px;
+  }
+
+  .hud__cluster {
+    gap: 5px;
   }
 
   .hud span {
-    min-width: 76px;
-    padding: 7px 8px;
-    font-size: 11px;
+    min-width: auto;
+    padding: 5px 6px;
+    font-size: 9px;
+    line-height: 1;
   }
 }
 
@@ -334,7 +342,7 @@ canvas {
   display: none;
   align-items: flex-end;
   justify-content: space-between;
-  padding: 0 max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  padding: 0 max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
@@ -352,8 +360,8 @@ canvas {
 
 .touch-stick {
   position: relative;
-  width: 118px;
-  height: 118px;
+  width: 104px;
+  height: 104px;
   border: 2px solid rgba(244, 236, 210, 0.2);
   border-radius: 50%;
   background: rgba(13, 13, 12, 0.42);
@@ -364,8 +372,8 @@ canvas {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   border: 2px solid rgba(247, 231, 177, 0.5);
   border-radius: 50%;
   background: rgba(225, 182, 82, 0.72);
@@ -376,19 +384,19 @@ canvas {
 .touch-actions {
   display: flex;
   align-items: flex-end;
-  gap: 14px;
+  gap: 10px;
 }
 
 .touch-weapon {
-  width: 58px;
-  height: 58px;
-  margin-bottom: 30px;
+  width: 50px;
+  height: 50px;
+  margin-bottom: 26px;
   border: 2px solid rgba(244, 236, 210, 0.22);
   border-radius: 50%;
   background: rgba(44, 49, 40, 0.78);
   color: #f7e7b1;
   font: inherit;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 900;
 }
 
@@ -397,30 +405,26 @@ canvas {
     display: flex;
   }
 
-  .hud {
-    top: max(8px, env(safe-area-inset-top));
-  }
-
   .boss-hud {
-    bottom: calc(148px + env(safe-area-inset-bottom));
+    bottom: calc(124px + env(safe-area-inset-bottom));
   }
 }
 
 @media (max-width: 480px) {
   .touch-stick {
-    width: 104px;
-    height: 104px;
+    width: 88px;
+    height: 88px;
   }
 
   .touch-stick__knob {
-    width: 42px;
-    height: 42px;
+    width: 36px;
+    height: 36px;
   }
 
   .touch-weapon {
-    width: 52px;
-    height: 52px;
-    margin-bottom: 26px;
-    font-size: 16px;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 22px;
+    font-size: 14px;
   }
 }
