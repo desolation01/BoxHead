@@ -7,14 +7,15 @@ import { createWave } from "../waves";
 import { getBestUnlockedWeapon, getUnlockedWeapons, STARTING_WEAPON, WEAPONS } from "../weapons";
 
 describe("weapon progression", () => {
-  it("starts with Flame Burst and infinite ammo for every weapon", () => {
+  it("starts with pistol and finite ammo for pickup weapons", () => {
     const gameScene = readFileSync("src/game/scenes/GameScene.ts", "utf8");
 
-    expect(STARTING_WEAPON.key).toBe("flameBurst");
-    expect(WEAPONS.every((weapon) => weapon.maxAmmo === Number.POSITIVE_INFINITY)).toBe(true);
-    expect(gameScene).toContain("this.ammo = new Map(WEAPONS.map((weapon) => [weapon.key, Number.POSITIVE_INFINITY]))");
-    expect(gameScene).not.toContain("weaponAmmo - this.currentWeapon.ammoPerShot");
-    expect(gameScene).toContain('this.setText("#hud-ammo", "Ammo INF")');
+    expect(STARTING_WEAPON.key).toBe("pistol");
+    expect(WEAPONS.every((weapon) => Number.isFinite(weapon.maxAmmo))).toBe(true);
+    expect(WEAPONS.filter((weapon) => weapon.key !== "pistol").every((weapon) => weapon.maxAmmo > weapon.clipPickup)).toBe(true);
+    expect(gameScene).toContain("this.ammo = new Map(WEAPONS.map((weapon) => [weapon.key, 0]))");
+    expect(gameScene).toContain("weaponAmmo - this.currentWeapon.ammoPerShot");
+    expect(gameScene).toContain('this.currentWeapon.ammoPerShot === 0 ? "Ammo --"');
   });
 
   it("keeps weapons sorted by unlock score", () => {

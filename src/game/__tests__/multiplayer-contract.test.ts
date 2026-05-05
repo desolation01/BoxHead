@@ -43,10 +43,10 @@ describe("GameScene multiplayer hooks", () => {
     expect(source).toContain("checkMultiplayerGameOver");
   });
 
-  it("starts new runs on wave 9", () => {
+  it("starts new runs on wave 1", () => {
     const source = read("src/game/scenes/GameScene.ts");
 
-    expect(source).toContain("const STARTING_WAVE = 9");
+    expect(source).toContain("const STARTING_WAVE = 1");
     expect(source).toContain("private waveNumber = STARTING_WAVE");
     expect(source).toContain("this.startWave(STARTING_WAVE)");
     expect(source).toContain("this.waveNumber = STARTING_WAVE");

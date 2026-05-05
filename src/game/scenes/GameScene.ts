@@ -110,7 +110,7 @@ type TouchStickState = {
 };
 
 const PLAYER_TINTS = [undefined, 0x6ab0ff, 0x6dff8a, 0xffd76a] as const;
-const STARTING_WAVE = 9;
+const STARTING_WAVE = 1;
 
 export class GameScene extends Phaser.Scene {
   private room!: RoomDefinition;
@@ -284,7 +284,7 @@ export class GameScene extends Phaser.Scene {
     this.spectatorTargets = [];
     this.spectatorIndex = 0;
     this.resetTouchControls();
-    this.ammo = new Map(WEAPONS.map((weapon) => [weapon.key, Number.POSITIVE_INFINITY]));
+    this.ammo = new Map(WEAPONS.map((weapon) => [weapon.key, 0]));
   }
 
   private createWorld(): void {
@@ -664,6 +664,9 @@ export class GameScene extends Phaser.Scene {
     if (weaponAmmo < this.currentWeapon.ammoPerShot) return;
 
     this.lastShotAt = time;
+    if (this.currentWeapon.ammoPerShot > 0) {
+      this.ammo.set(this.currentWeapon.key, Math.max(0, weaponAmmo - this.currentWeapon.ammoPerShot));
+    }
 
     const baseAngle = this.aimAngle;
     const pelletCount = this.currentWeapon.pellets;
@@ -1916,7 +1919,7 @@ export class GameScene extends Phaser.Scene {
     this.setText("#hud-wave", `Wave ${this.waveNumber}`);
     this.setText("#hud-score", `Score ${this.score}`);
     this.setText("#hud-weapon", this.currentWeapon.label);
-    this.setText("#hud-ammo", "Ammo INF");
+    this.setText("#hud-ammo", this.currentWeapon.ammoPerShot === 0 ? "Ammo --" : `Ammo ${this.ammo.get(this.currentWeapon.key) ?? 0}`);
     this.updateBossHud();
   }
 

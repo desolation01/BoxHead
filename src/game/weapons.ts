@@ -12,7 +12,7 @@ export const WEAPONS: WeaponDefinition[] = [
     pellets: 1,
     ammoPerShot: 0,
     clipPickup: 0,
-    maxAmmo: Number.POSITIVE_INFINITY,
+    maxAmmo: 0,
     color: 0xf4e3a2,
     pierce: 0
   },
@@ -27,7 +27,7 @@ export const WEAPONS: WeaponDefinition[] = [
     pellets: 1,
     ammoPerShot: 1,
     clipPickup: 28,
-    maxAmmo: Number.POSITIVE_INFINITY,
+    maxAmmo: 56,
     color: 0xf7d77c,
     pierce: 1,
     knockback: 120
@@ -43,7 +43,7 @@ export const WEAPONS: WeaponDefinition[] = [
     pellets: 6,
     ammoPerShot: 1,
     clipPickup: 18,
-    maxAmmo: Number.POSITIVE_INFINITY,
+    maxAmmo: 36,
     color: 0xff9f43,
     pierce: 0,
     knockback: 170
@@ -59,7 +59,7 @@ export const WEAPONS: WeaponDefinition[] = [
     pellets: 1,
     ammoPerShot: 1,
     clipPickup: 54,
-    maxAmmo: Number.POSITIVE_INFINITY,
+    maxAmmo: 180,
     color: 0xe8c36a,
     pierce: 1,
     knockback: 55
@@ -75,7 +75,7 @@ export const WEAPONS: WeaponDefinition[] = [
     pellets: 1,
     ammoPerShot: 1,
     clipPickup: 70,
-    maxAmmo: Number.POSITIVE_INFINITY,
+    maxAmmo: 210,
     color: 0xa7f070,
     pierce: 0
   },
@@ -90,7 +90,7 @@ export const WEAPONS: WeaponDefinition[] = [
     pellets: 1,
     ammoPerShot: 1,
     clipPickup: 22,
-    maxAmmo: Number.POSITIVE_INFINITY,
+    maxAmmo: 44,
     color: 0xd7f3b0,
     pierce: 4,
     knockback: 95
@@ -106,7 +106,7 @@ export const WEAPONS: WeaponDefinition[] = [
     pellets: 2,
     ammoPerShot: 1,
     clipPickup: 55,
-    maxAmmo: Number.POSITIVE_INFINITY,
+    maxAmmo: 165,
     color: 0xff6f2a,
     flameRadius: 34,
     pierce: 1
@@ -122,7 +122,7 @@ export const WEAPONS: WeaponDefinition[] = [
     pellets: 1,
     ammoPerShot: 1,
     clipPickup: 8,
-    maxAmmo: Number.POSITIVE_INFINITY,
+    maxAmmo: 16,
     color: 0xf25b38,
     explosiveRadius: 88,
     pierce: 0
@@ -138,7 +138,7 @@ export const WEAPONS: WeaponDefinition[] = [
     pellets: 3,
     ammoPerShot: 1,
     clipPickup: 20,
-    maxAmmo: Number.POSITIVE_INFINITY,
+    maxAmmo: 40,
     color: 0x73d9ff,
     pierce: 3
   },
@@ -153,14 +153,14 @@ export const WEAPONS: WeaponDefinition[] = [
     pellets: 1,
     ammoPerShot: 1,
     clipPickup: 120,
-    maxAmmo: Number.POSITIVE_INFINITY,
+    maxAmmo: 360,
     color: 0xc8d2d4,
     pierce: 1,
     knockback: 80
   }
 ];
 
-export const STARTING_WEAPON: WeaponDefinition = getWeapon("flameBurst");
+export const STARTING_WEAPON: WeaponDefinition = getWeapon("pistol");
 
 export function getWeapon(key: WeaponKey): WeaponDefinition {
   const weapon = WEAPONS.find((candidate) => candidate.key === key);
