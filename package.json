@@ -1,0 +1,23 @@
+{
+  "name": "blockhead-more-arenas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev":   "vite --host 0.0.0.0",
+    "host":  "concurrently \"node server.js\" \"vite --host 0.0.0.0\"",
+    "build": "tsc && vite build",
+    "test":  "vitest run"
+  },
+  "dependencies": {
+    "concurrently": "^9.2.1",
+    "phaser": "^3.90.0",
+    "ws": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vitest": "^3.2.4"
+  }
+}

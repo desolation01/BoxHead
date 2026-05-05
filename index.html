@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blockhead: More Arenas</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="game"></div>
+      <div id="hud" class="hud is-hidden">
+        <div class="hud__cluster">
+          <span id="hud-health">HP 100</span>
+          <span id="hud-wave">Wave 1</span>
+          <span id="hud-score">Score 0</span>
+        </div>
+        <div class="hud__cluster hud__cluster--right">
+          <span id="hud-weapon">Pistol</span>
+          <span id="hud-ammo">Ammo INF</span>
+        </div>
+      </div>
+      <div id="boss-hud" class="boss-hud is-hidden">
+        <div class="boss-hud__label">The Block Butcher</div>
+        <div class="boss-hud__bar"><div id="boss-hp-fill"></div></div>
+      </div>
+      <div id="spectator-bar" class="is-hidden">
+        Spectating: <span id="spectator-name">-</span>
+        <button id="spectator-prev">&lt;</button>
+        <button id="spectator-next">&gt;</button>
+      </div>
+      <div id="pvp-board" class="is-hidden"></div>
+      <div id="touch-controls" class="touch-controls is-hidden" aria-hidden="true">
+        <div class="touch-stick touch-stick--move" data-touch-move>
+          <div class="touch-stick__knob" data-touch-move-knob></div>
+        </div>
+        <div class="touch-actions">
+          <button class="touch-weapon" type="button" data-touch-weapon aria-label="Switch weapon">Q</button>
+          <div class="touch-stick touch-stick--fire" data-touch-aim>
+            <div class="touch-stick__knob" data-touch-aim-knob></div>
+          </div>
+        </div>
+      </div>
+      <div id="menu" class="menu"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

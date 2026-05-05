@@ -1,0 +1,8 @@
+version: "3"
+tunnels:
+  page:
+    proto: http
+    addr: 5173
+  relay:
+    proto: http
+    addr: 3001
