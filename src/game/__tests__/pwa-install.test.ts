@@ -52,7 +52,10 @@ class FakeElement {
   }
 }
 
-function installFakeDom(userAgent = "Mozilla/5.0 (Linux; Android 14) Chrome/125"): {
+function installFakeDom(
+  userAgent = "Mozilla/5.0 (Linux; Android 14) Chrome/125",
+  displayMode: "browser" | "standalone" | "fullscreen" = "browser"
+): {
   button: FakeElement;
   help: FakeElement;
   helpCopy: FakeElement;
@@ -69,7 +72,9 @@ function installFakeDom(userAgent = "Mozilla/5.0 (Linux; Android 14) Chrome/125"
   const fakeWindow = {
     navigator: { userAgent },
     matchMedia: vi.fn((query: string) => ({
-      matches: query.includes("hover: none") || query.includes("pointer: coarse") ? true : false
+      matches: query.includes(`display-mode: ${displayMode}`)
+        || query.includes("hover: none")
+        || query.includes("pointer: coarse")
     })),
     addEventListener: vi.fn((type: string, listener: (event: Event) => void) => {
       const typeListeners = listeners.get(type) ?? [];
@@ -94,6 +99,37 @@ function installFakeDom(userAgent = "Mozilla/5.0 (Linux; Android 14) Chrome/125"
 describe("setupInstallPrompt", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("keeps the Android install button hidden until the native prompt is ready", async () => {
+    const { button, help } = installFakeDom();
+    setupInstallPrompt();
+
+    expect(button.classList.contains("is-hidden")).toBe(true);
+
+    await button.click();
+
+    expect(help.classList.contains("is-hidden")).toBe(true);
+  });
+
+  it("keeps install UI hidden when launched as a fullscreen PWA", async () => {
+    const { button, help, listeners } = installFakeDom(
+      "Mozilla/5.0 (Linux; Android 14) Chrome/125",
+      "fullscreen"
+    );
+    setupInstallPrompt();
+
+    const prompt = vi.fn().mockResolvedValue({ outcome: "accepted" });
+    const event = {
+      preventDefault: vi.fn(),
+      prompt
+    } as unknown as Event;
+
+    listeners.get("beforeinstallprompt")?.forEach((listener) => listener(event));
+
+    expect(button.classList.contains("is-hidden")).toBe(true);
+    expect(help.classList.contains("is-hidden")).toBe(true);
+    expect(prompt).not.toHaveBeenCalled();
   });
 
   it("stores beforeinstallprompt and calls the native prompt from a user click", async () => {

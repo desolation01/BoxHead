@@ -413,10 +413,8 @@ canvas {
   inset: 0;
   z-index: 4;
   display: none;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 0 max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
-  pointer-events: none;
+  pointer-events: auto;
+  touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -427,18 +425,28 @@ canvas {
 
 .touch-stick,
 .touch-weapon {
-  pointer-events: auto;
+  pointer-events: none;
   touch-action: none;
 }
 
 .touch-stick {
-  position: relative;
+  position: fixed;
+  left: var(--touch-x, -120px);
+  top: var(--touch-y, -120px);
   width: 104px;
   height: 104px;
   border: 2px solid rgba(244, 236, 210, 0.2);
   border-radius: 50%;
   background: rgba(13, 13, 12, 0.42);
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.04);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.88);
+  transition: opacity 90ms ease, transform 90ms ease;
+}
+
+.touch-stick.is-active {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
 }
 
 .touch-stick__knob {
@@ -455,15 +463,15 @@ canvas {
 }
 
 .touch-actions {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
 }
 
 .touch-weapon {
+  pointer-events: auto;
   width: 50px;
   height: 50px;
-  margin-bottom: 26px;
   border: 2px solid rgba(244, 236, 210, 0.22);
   border-radius: 50%;
   background: rgba(44, 49, 40, 0.78);
@@ -553,7 +561,7 @@ canvas {
   }
 
   .touch-controls {
-    padding: 0 var(--landscape-control-side) var(--landscape-control-bottom) var(--landscape-control-side);
+    padding: 0;
   }
 
   .touch-stick {
@@ -569,12 +577,12 @@ canvas {
   .touch-weapon {
     width: 38px;
     height: 38px;
-    margin-bottom: 20px;
     font-size: 12px;
   }
 
   .touch-actions {
-    gap: 8px;
+    right: var(--landscape-control-side);
+    bottom: var(--landscape-control-bottom);
   }
 
   .install-app {

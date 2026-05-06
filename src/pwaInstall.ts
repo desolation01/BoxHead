@@ -13,7 +13,11 @@ const isIos = (): boolean => /iphone|ipad|ipod/i.test(window.navigator.userAgent
 
 const isStandalone = (): boolean => {
   const navigatorWithStandalone = window.navigator as Navigator & { standalone?: boolean };
-  return window.matchMedia("(display-mode: standalone)").matches || navigatorWithStandalone.standalone === true;
+  return navigatorWithStandalone.standalone === true
+    || window.matchMedia("(display-mode: standalone)").matches
+    || window.matchMedia("(display-mode: fullscreen)").matches
+    || window.matchMedia("(display-mode: minimal-ui)").matches
+    || window.matchMedia("(display-mode: window-controls-overlay)").matches;
 };
 
 const isTouchDevice = (): boolean => window.matchMedia("(hover: none), (pointer: coarse)").matches;
@@ -33,10 +37,20 @@ export function setupInstallPrompt(): void {
   };
 
   const showInstallButton = (): void => {
+    if (isStandalone()) {
+      hideInstallUi();
+      return;
+    }
+
     installButton.classList.remove("is-hidden");
   };
 
   window.addEventListener("beforeinstallprompt", (event) => {
+    if (isStandalone()) {
+      hideInstallUi();
+      return;
+    }
+
     event.preventDefault();
     deferredPrompt = event as BeforeInstallPromptEvent;
     showInstallButton();
@@ -57,8 +71,7 @@ export function setupInstallPrompt(): void {
       return;
     }
 
-    if (installHelpCopy) installHelpCopy.textContent = "Open the browser menu, then choose Install app or Add to Home screen.";
-    installHelp?.classList.remove("is-hidden");
+    installButton.classList.add("is-hidden");
   });
 
   installHelpClose?.addEventListener("click", () => {
@@ -67,7 +80,7 @@ export function setupInstallPrompt(): void {
 
   window.addEventListener("appinstalled", hideInstallUi);
 
-  if (isTouchDevice()) {
+  if (isIos() && isTouchDevice()) {
     showInstallButton();
   }
 }

@@ -7,6 +7,7 @@ import { chooseSmartSteerAngle } from "../pathfinding";
 import { getAmmoPickupTexture, getWeaponPickupTexture } from "../pickups";
 import { spawnPointFromAngle, velocityFromAngle } from "../projectiles";
 import { getRoom } from "../rooms";
+import { clampTouchStickCenter, getTouchControlSide } from "../touchControls";
 import type { EnemyDefinition, EnemyKind, PickupKind, RoomDefinition, WeaponKey } from "../types";
 import { createWave } from "../waves";
 import { getBestUnlockedWeapon, getNextUsableWeapon, getWeapon, STARTING_WEAPON, WEAPONS } from "../weapons";
@@ -106,7 +107,10 @@ interface GameSceneData {
 type TouchStickState = {
   pointerId: number | null;
   vector: Phaser.Math.Vector2;
+  element: HTMLElement | null;
   knob: HTMLElement | null;
+  centerX: number;
+  centerY: number;
 };
 type ShotToneLayer = { frequency: number; duration: number; volume: number; type: OscillatorType; delay?: number; endFrequency?: number };
 type ShotNoiseLayer = { duration: number; volume: number; filterFrequency: number; filterType?: BiquadFilterType; delay?: number };
@@ -231,8 +235,8 @@ export class GameScene extends Phaser.Scene {
   private menuEl: HTMLElement | null = null;
   private touchControlsEl: HTMLElement | null = null;
   private orientationLockEl: HTMLElement | null = null;
-  private touchMoveStick: TouchStickState = { pointerId: null, vector: new Phaser.Math.Vector2(), knob: null };
-  private touchAimStick: TouchStickState = { pointerId: null, vector: new Phaser.Math.Vector2(), knob: null };
+  private touchMoveStick: TouchStickState = { pointerId: null, vector: new Phaser.Math.Vector2(), element: null, knob: null, centerX: 0, centerY: 0 };
+  private touchAimStick: TouchStickState = { pointerId: null, vector: new Phaser.Math.Vector2(), element: null, knob: null, centerX: 0, centerY: 0 };
   private touchShooting = false;
   private touchWeaponQueued = false;
   private orientationBlocked = false;
@@ -624,13 +628,16 @@ export class GameScene extends Phaser.Scene {
     const aim = controls?.querySelector<HTMLElement>("[data-touch-aim]") ?? null;
     const weapon = controls?.querySelector<HTMLButtonElement>("[data-touch-weapon]") ?? null;
     this.touchControlsEl = controls ?? null;
+    this.touchMoveStick.element = move;
+    this.touchAimStick.element = aim;
     this.touchMoveStick.knob = controls?.querySelector<HTMLElement>("[data-touch-move-knob]") ?? null;
     this.touchAimStick.knob = controls?.querySelector<HTMLElement>("[data-touch-aim-knob]") ?? null;
 
     if (!controls || !move || !aim || !weapon) return;
 
-    this.bindTouchStick(move, this.touchMoveStick, false);
-    this.bindTouchStick(aim, this.touchAimStick, true);
+    this.hideTouchStick(this.touchMoveStick);
+    this.hideTouchStick(this.touchAimStick);
+    this.bindFloatingTouchControls(controls);
 
     const queueWeapon = (event: PointerEvent) => {
       event.preventDefault();
@@ -640,45 +647,77 @@ export class GameScene extends Phaser.Scene {
     this.removeTouchControlListeners.push(() => weapon.removeEventListener("pointerdown", queueWeapon));
   }
 
-  private bindTouchStick(element: HTMLElement, stick: TouchStickState, shoots: boolean): void {
+  private bindFloatingTouchControls(controls: HTMLElement): void {
     const start = (event: PointerEvent) => {
+      if (!this.isMobileViewport()) return;
+      if (event.target instanceof HTMLElement && event.target.closest("[data-touch-weapon]")) return;
       event.preventDefault();
+      const side = getTouchControlSide(event.clientX, window.innerWidth);
+      const stick = side === "move" ? this.touchMoveStick : this.touchAimStick;
+      const shoots = side === "aim";
+      if (stick.pointerId !== null) return;
       stick.pointerId = event.pointerId;
-      element.setPointerCapture(event.pointerId);
+      controls.setPointerCapture(event.pointerId);
       if (shoots) this.touchShooting = true;
-      this.updateTouchStickFromEvent(element, stick, event);
+      this.showTouchStickAt(stick, event);
+      this.updateTouchStickFromEvent(stick, event);
     };
     const move = (event: PointerEvent) => {
-      if (stick.pointerId !== event.pointerId) return;
+      const stick = this.getTouchStickForPointer(event.pointerId);
+      if (!stick) return;
       event.preventDefault();
-      this.updateTouchStickFromEvent(element, stick, event);
+      this.updateTouchStickFromEvent(stick, event);
     };
     const end = (event: PointerEvent) => {
-      if (stick.pointerId !== event.pointerId) return;
+      const stick = this.getTouchStickForPointer(event.pointerId);
+      if (!stick) return;
       event.preventDefault();
+      const shoots = stick === this.touchAimStick;
       stick.pointerId = null;
       stick.vector.set(0, 0);
       this.updateTouchKnob(stick);
+      this.hideTouchStick(stick);
       if (shoots) this.touchShooting = false;
     };
 
-    element.addEventListener("pointerdown", start);
-    element.addEventListener("pointermove", move);
-    element.addEventListener("pointerup", end);
-    element.addEventListener("pointercancel", end);
+    controls.addEventListener("pointerdown", start);
+    controls.addEventListener("pointermove", move);
+    controls.addEventListener("pointerup", end);
+    controls.addEventListener("pointercancel", end);
     this.removeTouchControlListeners.push(
-      () => element.removeEventListener("pointerdown", start),
-      () => element.removeEventListener("pointermove", move),
-      () => element.removeEventListener("pointerup", end),
-      () => element.removeEventListener("pointercancel", end)
+      () => controls.removeEventListener("pointerdown", start),
+      () => controls.removeEventListener("pointermove", move),
+      () => controls.removeEventListener("pointerup", end),
+      () => controls.removeEventListener("pointercancel", end)
     );
   }
 
-  private updateTouchStickFromEvent(element: HTMLElement, stick: TouchStickState, event: PointerEvent): void {
-    const rect = element.getBoundingClientRect();
-    const radius = Math.max(1, Math.min(rect.width, rect.height) / 2);
-    const x = event.clientX - rect.left - rect.width / 2;
-    const y = event.clientY - rect.top - rect.height / 2;
+  private getTouchStickForPointer(pointerId: number): TouchStickState | null {
+    if (this.touchMoveStick.pointerId === pointerId) return this.touchMoveStick;
+    if (this.touchAimStick.pointerId === pointerId) return this.touchAimStick;
+    return null;
+  }
+
+  private showTouchStickAt(stick: TouchStickState, event: PointerEvent): void {
+    if (!stick.element) return;
+
+    const radius = Math.max(1, Math.min(stick.element.offsetWidth, stick.element.offsetHeight) / 2);
+    const center = clampTouchStickCenter(event.clientX, event.clientY, window.innerWidth, window.innerHeight, radius);
+    stick.centerX = center.x;
+    stick.centerY = center.y;
+    stick.element.style.setProperty("--touch-x", `${Math.round(center.x)}px`);
+    stick.element.style.setProperty("--touch-y", `${Math.round(center.y)}px`);
+    stick.element.classList.add("is-active");
+  }
+
+  private hideTouchStick(stick: TouchStickState): void {
+    stick.element?.classList.remove("is-active");
+  }
+
+  private updateTouchStickFromEvent(stick: TouchStickState, event: PointerEvent): void {
+    const radius = Math.max(1, Math.min(stick.element?.offsetWidth ?? 104, stick.element?.offsetHeight ?? 104) / 2);
+    const x = event.clientX - stick.centerX;
+    const y = event.clientY - stick.centerY;
     const vector = new Phaser.Math.Vector2(x / radius, y / radius);
     if (vector.lengthSq() > 1) vector.normalize();
     stick.vector.copy(vector);
@@ -853,6 +892,8 @@ export class GameScene extends Phaser.Scene {
     this.touchWeaponQueued = false;
     this.updateTouchKnob(this.touchMoveStick);
     this.updateTouchKnob(this.touchAimStick);
+    this.hideTouchStick(this.touchMoveStick);
+    this.hideTouchStick(this.touchAimStick);
   }
 
   private createCollisions(): void {
