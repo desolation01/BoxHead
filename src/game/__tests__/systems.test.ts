@@ -136,7 +136,19 @@ describe("camera framing", () => {
     const gameScene = readFileSync("src/game/scenes/GameScene.ts", "utf8");
 
     expect(gameScene).toContain("DESKTOP_CAMERA_ZOOM");
+    expect(gameScene).toContain("const MOBILE_CAMERA_ZOOM = 0.9");
     expect(gameScene).toContain("const zoom = isMobileViewport ? (isPortrait ? PORTRAIT_CAMERA_ZOOM : MOBILE_CAMERA_ZOOM) : DESKTOP_CAMERA_ZOOM");
+  });
+});
+
+describe("mobile controls", () => {
+  it("keeps landscape controls inset and the boss HUD compact", () => {
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(styles).toContain("--landscape-control-side");
+    expect(styles).toContain("--landscape-control-bottom");
+    expect(styles).toContain("width: min(260px, 42vw)");
+    expect(styles).toContain("height: 8px");
   });
 });
 

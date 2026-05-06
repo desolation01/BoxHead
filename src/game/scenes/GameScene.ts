@@ -118,7 +118,7 @@ const BASE_ROOM_WIDTH = 1440;
 const BASE_ROOM_HEIGHT = 960;
 const MIN_SPAWN_DISTANCE_FROM_PLAYER = 420;
 const DESKTOP_CAMERA_ZOOM = 1.8;
-const MOBILE_CAMERA_ZOOM = 1.5;
+const MOBILE_CAMERA_ZOOM = 0.9;
 const PORTRAIT_CAMERA_ZOOM = 1.35;
 const WEAPON_SHOT_SFX: Record<WeaponKey, WeaponShotSfx> = {
   pistol: {

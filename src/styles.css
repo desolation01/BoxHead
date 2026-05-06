@@ -464,6 +464,11 @@ canvas {
 }
 
 @media (orientation: landscape) and (hover: none), (orientation: landscape) and (pointer: coarse), (orientation: landscape) and (max-height: 520px) {
+  :root {
+    --landscape-control-side: max(42px, calc(env(safe-area-inset-left) + 28px));
+    --landscape-control-bottom: max(30px, calc(env(safe-area-inset-bottom) + 24px));
+  }
+
   .hud {
     top: max(5px, env(safe-area-inset-top));
     left: max(8px, env(safe-area-inset-left));
@@ -480,7 +485,7 @@ canvas {
   }
 
   .touch-controls {
-    padding: 0 max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    padding: 0 var(--landscape-control-side) var(--landscape-control-bottom) var(--landscape-control-side);
   }
 
   .touch-stick {
@@ -505,7 +510,20 @@ canvas {
   }
 
   .boss-hud {
-    bottom: calc(86px + env(safe-area-inset-bottom));
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    width: min(260px, 42vw);
+  }
+
+  .boss-hud__label {
+    margin-bottom: 3px;
+    font-size: 8px;
+    line-height: 1;
+  }
+
+  .boss-hud__bar {
+    height: 8px;
+    border-width: 1px;
+    box-shadow: none;
   }
 }
 
