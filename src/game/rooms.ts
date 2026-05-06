@@ -1,7 +1,8 @@
 import type { RoomDefinition } from "./types";
 
-const ROOM_WIDTH = 1440;
-const ROOM_HEIGHT = 960;
+const BASE_ROOM_WIDTH = 1440;
+const BASE_ROOM_HEIGHT = 960;
+const ROOM_SCALE = 1.35;
 
 function border(width: number, height: number) {
   return [
@@ -12,16 +13,43 @@ function border(width: number, height: number) {
   ];
 }
 
-export const ROOMS: RoomDefinition[] = [
+function scaleValue(value: number): number {
+  return Math.round(value * ROOM_SCALE);
+}
+
+function scaleRoom(room: RoomDefinition): RoomDefinition {
+  return {
+    ...room,
+    width: scaleValue(room.width),
+    height: scaleValue(room.height),
+    playerStart: { x: scaleValue(room.playerStart.x), y: scaleValue(room.playerStart.y) },
+    walls: room.walls.map((wall) => ({
+      x: scaleValue(wall.x),
+      y: scaleValue(wall.y),
+      width: scaleValue(wall.width),
+      height: scaleValue(wall.height)
+    })),
+    barricades: room.barricades.map((barricade) => ({
+      x: scaleValue(barricade.x),
+      y: scaleValue(barricade.y),
+      width: scaleValue(barricade.width),
+      height: scaleValue(barricade.height)
+    })),
+    barrels: room.barrels.map((barrel) => ({ x: scaleValue(barrel.x), y: scaleValue(barrel.y) })),
+    spawns: room.spawns.map((spawn) => ({ x: scaleValue(spawn.x), y: scaleValue(spawn.y) }))
+  };
+}
+
+const BASE_ROOMS: RoomDefinition[] = [
   {
     key: "crossfire",
     name: "Crossfire",
     description: "Expanded lanes, center pressure, quick flanks.",
-    width: ROOM_WIDTH,
-    height: ROOM_HEIGHT,
+    width: BASE_ROOM_WIDTH,
+    height: BASE_ROOM_HEIGHT,
     playerStart: { x: 720, y: 480 },
     walls: [
-      ...border(ROOM_WIDTH, ROOM_HEIGHT),
+      ...border(BASE_ROOM_WIDTH, BASE_ROOM_HEIGHT),
       { x: 260, y: 150, width: 214, height: 38 },
       { x: 966, y: 150, width: 214, height: 38 },
       { x: 260, y: 772, width: 214, height: 38 },
@@ -60,11 +88,11 @@ export const ROOMS: RoomDefinition[] = [
     key: "trenches",
     name: "Trenches",
     description: "Longer lanes, brittle cover, ugly retreats.",
-    width: ROOM_WIDTH,
-    height: ROOM_HEIGHT,
+    width: BASE_ROOM_WIDTH,
+    height: BASE_ROOM_HEIGHT,
     playerStart: { x: 720, y: 480 },
     walls: [
-      ...border(ROOM_WIDTH, ROOM_HEIGHT),
+      ...border(BASE_ROOM_WIDTH, BASE_ROOM_HEIGHT),
       { x: 184, y: 136, width: 38, height: 650 },
       { x: 1218, y: 174, width: 38, height: 610 },
       { x: 420, y: 88, width: 38, height: 280 },
@@ -99,11 +127,11 @@ export const ROOMS: RoomDefinition[] = [
     key: "boxyard",
     name: "Boxyard",
     description: "Dense blocks, short sightlines, messy retreats.",
-    width: ROOM_WIDTH,
-    height: ROOM_HEIGHT,
+    width: BASE_ROOM_WIDTH,
+    height: BASE_ROOM_HEIGHT,
     playerStart: { x: 720, y: 480 },
     walls: [
-      ...border(ROOM_WIDTH, ROOM_HEIGHT),
+      ...border(BASE_ROOM_WIDTH, BASE_ROOM_HEIGHT),
       { x: 190, y: 148, width: 128, height: 128 },
       { x: 1122, y: 148, width: 128, height: 128 },
       { x: 190, y: 684, width: 128, height: 128 },
@@ -143,6 +171,8 @@ export const ROOMS: RoomDefinition[] = [
     ]
   }
 ];
+
+export const ROOMS: RoomDefinition[] = BASE_ROOMS.map(scaleRoom);
 
 export function getRoom(key: string): RoomDefinition {
   const room = ROOMS.find((candidate) => candidate.key === key);

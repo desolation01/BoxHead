@@ -29,3 +29,4 @@ Thumbs.db
 
 # Local agent/worktree scratch space
 .worktrees/
+docs/

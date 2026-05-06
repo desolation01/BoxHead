@@ -108,9 +108,94 @@ type TouchStickState = {
   vector: Phaser.Math.Vector2;
   knob: HTMLElement | null;
 };
+type ShotToneLayer = { frequency: number; duration: number; volume: number; type: OscillatorType; delay?: number; endFrequency?: number };
+type ShotNoiseLayer = { duration: number; volume: number; filterFrequency: number; filterType?: BiquadFilterType; delay?: number };
+type WeaponShotSfx = { tones: ShotToneLayer[]; noise?: ShotNoiseLayer[] };
 
 const PLAYER_TINTS = [undefined, 0x6ab0ff, 0x6dff8a, 0xffd76a] as const;
 const STARTING_WAVE = 1;
+const BASE_ROOM_WIDTH = 1440;
+const BASE_ROOM_HEIGHT = 960;
+const MIN_SPAWN_DISTANCE_FROM_PLAYER = 420;
+const DESKTOP_CAMERA_ZOOM = 1.8;
+const MOBILE_CAMERA_ZOOM = 1.5;
+const PORTRAIT_CAMERA_ZOOM = 1.35;
+const WEAPON_SHOT_SFX: Record<WeaponKey, WeaponShotSfx> = {
+  pistol: {
+    tones: [
+      { frequency: 440, endFrequency: 220, duration: 0.055, volume: 0.06, type: "square" },
+      { frequency: 115, duration: 0.045, volume: 0.035, type: "sawtooth" }
+    ],
+    noise: [{ duration: 0.04, volume: 0.03, filterFrequency: 2100 }]
+  },
+  magnum: {
+    tones: [
+      { frequency: 320, endFrequency: 110, duration: 0.095, volume: 0.09, type: "square" },
+      { frequency: 70, duration: 0.11, volume: 0.07, type: "sawtooth" }
+    ],
+    noise: [{ duration: 0.08, volume: 0.05, filterFrequency: 1600 }]
+  },
+  shotgun: {
+    tones: [
+      { frequency: 150, endFrequency: 58, duration: 0.16, volume: 0.1, type: "sawtooth" },
+      { frequency: 92, duration: 0.12, volume: 0.07, type: "square", delay: 0.018 }
+    ],
+    noise: [
+      { duration: 0.13, volume: 0.08, filterFrequency: 900 },
+      { duration: 0.045, volume: 0.035, filterFrequency: 2600, delay: 0.09 }
+    ]
+  },
+  ak47: {
+    tones: [
+      { frequency: 255, endFrequency: 150, duration: 0.05, volume: 0.06, type: "square" },
+      { frequency: 88, duration: 0.04, volume: 0.04, type: "sawtooth" }
+    ],
+    noise: [{ duration: 0.045, volume: 0.04, filterFrequency: 1900 }]
+  },
+  uzi: {
+    tones: [
+      { frequency: 520, endFrequency: 260, duration: 0.035, volume: 0.045, type: "square" },
+      { frequency: 180, duration: 0.025, volume: 0.025, type: "triangle" }
+    ],
+    noise: [{ duration: 0.03, volume: 0.028, filterFrequency: 3200 }]
+  },
+  crossbow: {
+    tones: [
+      { frequency: 690, endFrequency: 260, duration: 0.075, volume: 0.04, type: "triangle" },
+      { frequency: 118, duration: 0.045, volume: 0.028, type: "sawtooth", delay: 0.018 }
+    ],
+    noise: [{ duration: 0.025, volume: 0.018, filterFrequency: 3800 }]
+  },
+  flameBurst: {
+    tones: [
+      { frequency: 120, endFrequency: 70, duration: 0.08, volume: 0.035, type: "sawtooth" },
+      { frequency: 55, duration: 0.08, volume: 0.025, type: "triangle" }
+    ],
+    noise: [{ duration: 0.12, volume: 0.07, filterFrequency: 620, filterType: "lowpass" }]
+  },
+  barrelLauncher: {
+    tones: [
+      { frequency: 72, endFrequency: 38, duration: 0.22, volume: 0.11, type: "sawtooth" },
+      { frequency: 150, endFrequency: 80, duration: 0.1, volume: 0.055, type: "square", delay: 0.025 }
+    ],
+    noise: [{ duration: 0.1, volume: 0.06, filterFrequency: 700, filterType: "lowpass" }]
+  },
+  railBurst: {
+    tones: [
+      { frequency: 880, endFrequency: 1320, duration: 0.07, volume: 0.045, type: "sawtooth" },
+      { frequency: 1760, endFrequency: 660, duration: 0.06, volume: 0.035, type: "triangle", delay: 0.018 },
+      { frequency: 110, duration: 0.06, volume: 0.04, type: "square" }
+    ],
+    noise: [{ duration: 0.035, volume: 0.028, filterFrequency: 5200 }]
+  },
+  minigun: {
+    tones: [
+      { frequency: 360, endFrequency: 180, duration: 0.032, volume: 0.05, type: "square" },
+      { frequency: 95, duration: 0.028, volume: 0.032, type: "sawtooth" }
+    ],
+    noise: [{ duration: 0.025, volume: 0.035, filterFrequency: 2500 }]
+  }
+};
 
 export class GameScene extends Phaser.Scene {
   private room!: RoomDefinition;
@@ -175,6 +260,10 @@ export class GameScene extends Phaser.Scene {
   private navCols = 0;
   private navRows = 0;
   private staticBlockedCells = new Set<string>();
+  private audioContext: AudioContext | null = null;
+  private musicEvent: Phaser.Time.TimerEvent | null = null;
+  private musicStep = 0;
+  private lastSfxAt = new Map<string, number>();
 
   constructor() {
     super("GameScene");
@@ -194,6 +283,7 @@ export class GameScene extends Phaser.Scene {
     this.createPlayer();
     this.createRemotePlayers();
     this.createInput();
+    this.installAudioUnlock();
     this.configureNetworkHandlers();
     this.createCollisions();
     this.startWave(STARTING_WAVE);
@@ -213,6 +303,7 @@ export class GameScene extends Phaser.Scene {
     this.scale.on(Phaser.Scale.Events.RESIZE, this.applyResponsiveCamera, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.applyResponsiveCamera, this);
+      this.stopMusic();
     });
     this.updateOrientationLock();
     this.updateHud();
@@ -305,14 +396,14 @@ export class GameScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, this.room.width, this.room.height);
     this.cameras.main.setBounds(0, 0, this.room.width, this.room.height);
     this.add.tileSprite(this.room.width / 2, this.room.height / 2, this.room.width, this.room.height, "floor-tile").setDepth(0);
-    this.add.grid(this.room.width / 2, this.room.height / 2, this.room.width, this.room.height, 64, 64, 0x000000, 0, 0x141410, 0.5).setDepth(0.05);
+    this.add.grid(this.room.width / 2, this.room.height / 2, this.room.width, this.room.height, 64, 64, 0x000000, 0, 0xc7bba4, 0.18).setDepth(0.05);
     this.createRoomDressing();
 
     this.walls = this.physics.add.staticGroup();
     for (const wall of this.room.walls) {
-      this.add.rectangle(wall.x + wall.width / 2 + 4, wall.y + wall.height / 2 + 5, wall.width, wall.height, 0x050504, 0.28).setDepth(0.55);
+      this.drawBeveledWallBlock(wall.x, wall.y, wall.width, wall.height);
       const tile = this.add.tileSprite(wall.x + wall.width / 2, wall.y + wall.height / 2, wall.width, wall.height, "wall");
-      tile.setDepth(1);
+      tile.setVisible(false);
       this.physics.add.existing(tile, true);
       this.walls.add(tile);
     }
@@ -344,6 +435,53 @@ export class GameScene extends Phaser.Scene {
     this.buildNavigationGrid();
   }
 
+  private drawBeveledWallBlock(x: number, y: number, width: number, height: number): void {
+    const bevel = Math.min(46, width * 0.16, height * 0.32);
+    const topHeight = Math.max(28, height * 0.56);
+    const graphics = this.add.graphics();
+    graphics.setDepth(1);
+    graphics.fillStyle(0x111111, 0.22);
+    graphics.fillRect(x + 8, y + 10, width, height);
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillPoints([
+      new Phaser.Geom.Point(x + bevel, y),
+      new Phaser.Geom.Point(x + width - bevel, y),
+      new Phaser.Geom.Point(x + width, y + bevel),
+      new Phaser.Geom.Point(x + width, y + topHeight),
+      new Phaser.Geom.Point(x, y + topHeight),
+      new Phaser.Geom.Point(x, y + bevel)
+    ], true);
+    graphics.fillStyle(0x8d8d89, 1);
+    graphics.fillPoints([
+      new Phaser.Geom.Point(x, y + topHeight),
+      new Phaser.Geom.Point(x + width, y + topHeight),
+      new Phaser.Geom.Point(x + width, y + height),
+      new Phaser.Geom.Point(x, y + height)
+    ], true);
+    graphics.fillStyle(0xb9b9b5, 1);
+    graphics.fillPoints([
+      new Phaser.Geom.Point(x, y + bevel),
+      new Phaser.Geom.Point(x + bevel, y),
+      new Phaser.Geom.Point(x, y + topHeight)
+    ], true);
+    graphics.fillStyle(0x777773, 1);
+    graphics.fillPoints([
+      new Phaser.Geom.Point(x + width - bevel, y),
+      new Phaser.Geom.Point(x + width, y + bevel),
+      new Phaser.Geom.Point(x + width, y + height),
+      new Phaser.Geom.Point(x + width - 10, y + height)
+    ], true);
+    graphics.lineStyle(2, 0x111111, 0.9);
+    graphics.strokePoints([
+      new Phaser.Geom.Point(x + bevel, y),
+      new Phaser.Geom.Point(x + width - bevel, y),
+      new Phaser.Geom.Point(x + width, y + bevel),
+      new Phaser.Geom.Point(x + width, y + height),
+      new Phaser.Geom.Point(x, y + height),
+      new Phaser.Geom.Point(x, y + bevel)
+    ], true);
+  }
+
   private createPlayer(): void {
     this.player = this.physics.add.sprite(this.room.playerStart.x, this.room.playerStart.y, "player");
     this.player.setCollideWorldBounds(true);
@@ -364,7 +502,7 @@ export class GameScene extends Phaser.Scene {
     const height = this.scale.height;
     const isMobileViewport = width <= 760 || height <= 520;
     const isPortrait = height > width;
-    const zoom = isMobileViewport ? (isPortrait ? 1.25 : 1.34) : 1;
+    const zoom = isMobileViewport ? (isPortrait ? PORTRAIT_CAMERA_ZOOM : MOBILE_CAMERA_ZOOM) : DESKTOP_CAMERA_ZOOM;
     const deadzoneWidth = isMobileViewport ? Math.min(150, width * 0.24) : 180;
     const deadzoneHeight = isMobileViewport ? Math.min(72, height * 0.16) : 120;
 
@@ -553,6 +691,152 @@ export class GameScene extends Phaser.Scene {
     stick.knob?.style.setProperty("--knob-y", `${Math.round(stick.vector.y * distance)}px`);
   }
 
+  private installAudioUnlock(): void {
+    const unlock = () => {
+      this.unlockAudio();
+      this.startMusic();
+    };
+    this.input.once("pointerdown", unlock);
+    this.input.keyboard?.once("keydown", unlock);
+  }
+
+  private unlockAudio(): AudioContext | null {
+    if (!this.audioContext) {
+      const AudioCtor = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtor) return null;
+      this.audioContext = new AudioCtor();
+    }
+    if (this.audioContext.state === "suspended") {
+      void this.audioContext.resume();
+    }
+    return this.audioContext;
+  }
+
+  private startMusic(): void {
+    if (this.musicEvent) return;
+    this.unlockAudio();
+    const bass = [55, 55, 65.41, 73.42, 82.41, 73.42, 65.41, 55];
+    const lead = [220, 246.94, 261.63, 196, 220, 174.61, 196, 146.83];
+    this.musicEvent = this.time.addEvent({
+      delay: 185,
+      loop: true,
+      callback: () => {
+        if (!this.audioContext || this.audioContext.state !== "running") return;
+        const step = this.musicStep % bass.length;
+        this.playTone(bass[step]!, 0.13, 0.035, "sawtooth");
+        if (this.musicStep % 4 === 0) this.playTone(lead[Math.floor(step / 2)]!, 0.09, 0.018, "triangle");
+        this.musicStep += 1;
+      }
+    });
+  }
+
+  private stopMusic(): void {
+    this.musicEvent?.remove(false);
+    this.musicEvent = null;
+  }
+
+  private playSfx(kind: "shoot" | "pickup" | "enemyHit" | "enemyDeath" | "explosion" | "playerHit" | "wave" | "boss"): void {
+    const now = this.time.now;
+    const throttleMs = kind === "enemyHit" ? 32 : kind === "shoot" ? 24 : 0;
+    if (throttleMs > 0 && now - (this.lastSfxAt.get(kind) ?? 0) < throttleMs) return;
+    this.lastSfxAt.set(kind, now);
+
+    switch (kind) {
+      case "shoot":
+        this.playWeaponShotSfx(this.currentWeapon.key);
+        break;
+      case "pickup":
+        this.playTone(660, 0.07, 0.04, "triangle");
+        this.time.delayedCall(48, () => this.playTone(880, 0.08, 0.035, "triangle"));
+        break;
+      case "enemyHit":
+        this.playTone(150, 0.045, 0.035, "sawtooth");
+        break;
+      case "enemyDeath":
+        this.playTone(90, 0.12, 0.055, "sawtooth");
+        break;
+      case "explosion":
+        this.playTone(55, 0.18, 0.11, "sawtooth");
+        this.playTone(120, 0.09, 0.055, "square");
+        break;
+      case "playerHit":
+        this.playTone(110, 0.08, 0.07, "square");
+        break;
+      case "wave":
+        this.playTone(330, 0.11, 0.045, "triangle");
+        this.time.delayedCall(90, () => this.playTone(440, 0.13, 0.04, "triangle"));
+        break;
+      case "boss":
+        this.playTone(46.25, 0.3, 0.09, "sawtooth");
+        this.time.delayedCall(120, () => this.playTone(61.74, 0.24, 0.08, "sawtooth"));
+        break;
+    }
+  }
+
+  private playWeaponShotSfx(weaponKey: WeaponKey): void {
+    const profile = WEAPON_SHOT_SFX[weaponKey];
+    for (const layer of profile.tones) {
+      const play = () => this.playTone(layer.frequency, layer.duration, layer.volume, layer.type, layer.endFrequency);
+      if (layer.delay) this.time.delayedCall(layer.delay * 1000, play);
+      else play();
+    }
+
+    for (const layer of profile.noise ?? []) {
+      const play = () => this.playNoiseBurst(layer.duration, layer.volume, layer.filterFrequency, layer.filterType ?? "highpass");
+      if (layer.delay) this.time.delayedCall(layer.delay * 1000, play);
+      else play();
+    }
+  }
+
+  private playTone(frequency: number, duration: number, volume: number, type: OscillatorType, endFrequency = frequency): void {
+    const context = this.unlockAudio();
+    if (!context) return;
+
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const start = context.currentTime;
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, start);
+    if (endFrequency !== frequency) {
+      oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, endFrequency), start + duration);
+    }
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(start);
+    oscillator.stop(start + duration + 0.02);
+  }
+
+  private playNoiseBurst(duration: number, volume: number, filterFrequency: number, filterType: BiquadFilterType): void {
+    const context = this.unlockAudio();
+    if (!context) return;
+
+    const frameCount = Math.max(1, Math.floor(context.sampleRate * duration));
+    const buffer = context.createBuffer(1, frameCount, context.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let index = 0; index < frameCount; index += 1) {
+      data[index] = Phaser.Math.FloatBetween(-1, 1);
+    }
+
+    const source = context.createBufferSource();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+    const start = context.currentTime;
+    source.buffer = buffer;
+    filter.type = filterType;
+    filter.frequency.setValueAtTime(filterFrequency, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(volume, start + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(context.destination);
+    source.start(start);
+    source.stop(start + duration + 0.02);
+  }
+
   private destroyTouchControls(): void {
     for (const remove of this.removeTouchControlListeners) remove();
     this.removeTouchControlListeners = [];
@@ -624,6 +908,7 @@ export class GameScene extends Phaser.Scene {
     this.nextSpawnAt = this.time.now + 700;
     this.boss = null;
     this.updateBossHud();
+    this.playSfx("wave");
     if (this.bossWave) {
       this.time.delayedCall(800, () => {
         if (this.splitterBossWave) this.spawnSplitterBoss(definition);
@@ -731,6 +1016,7 @@ export class GameScene extends Phaser.Scene {
       this.spawnBullet(baseAngle + offset);
     }
     this.weaponRecoil = 1;
+    this.playSfx("shoot");
     this.tweens.add({
       targets: this.player,
       scaleX: 0.96,
@@ -768,6 +1054,7 @@ export class GameScene extends Phaser.Scene {
     const lastShotAt = (sprite.getData("lastShotAt") as number | undefined) ?? 0;
     if (now - lastShotAt < weapon.fireRateMs) return;
     sprite.setData("lastShotAt", now);
+    this.playWeaponShotSfx(weapon.key);
 
     const pelletCount = weapon.pellets;
     for (let index = 0; index < pelletCount; index += 1) {
@@ -1203,7 +1490,7 @@ export class GameScene extends Phaser.Scene {
     if (this.enemiesQueued <= 0 || time < this.nextSpawnAt) return;
 
     const wave = createWave(this.waveNumber);
-    const spawn = Phaser.Utils.Array.GetRandom(this.room.spawns);
+    const spawn = this.getRandomSpawnPoint(112);
     const definition = pickEnemyForWave(wave);
     const enemy = this.physics.add.sprite(spawn.x, spawn.y, definition.texture) as EnemySprite;
     this.configureEnemy(enemy, definition, wave);
@@ -1212,6 +1499,37 @@ export class GameScene extends Phaser.Scene {
     this.enemiesQueued -= 1;
     this.enemiesAlive += 1;
     this.nextSpawnAt = time + wave.spawnDelayMs;
+  }
+
+  private getRandomSpawnPoint(radius: number): Phaser.Math.Vector2 {
+    const anchor = Phaser.Utils.Array.GetRandom(this.room.spawns);
+    const padding = 48;
+    const obstacles = this.getNavigationObstacles();
+    const livingPlayers = this.getLivingPlayers();
+
+    for (let attempt = 0; attempt < 18; attempt += 1) {
+      const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+      const distance = Phaser.Math.FloatBetween(16, radius);
+      const x = Phaser.Math.Clamp(anchor.x + Math.cos(angle) * distance, padding, this.room.width - padding);
+      const y = Phaser.Math.Clamp(anchor.y + Math.sin(angle) * distance, padding, this.room.height - padding);
+      const spawnCircle = new Phaser.Geom.Circle(x, y, 24);
+      const blocked = obstacles.some((rect) => Phaser.Geom.Intersects.CircleToRectangle(spawnCircle, rect));
+      const tooCloseToPlayer = livingPlayers.some((player) => Phaser.Math.Distance.Between(x, y, player.x, player.y) < MIN_SPAWN_DISTANCE_FROM_PLAYER);
+      if (!blocked && !tooCloseToPlayer) return new Phaser.Math.Vector2(x, y);
+    }
+
+    const farthestSpawn = [...this.room.spawns]
+      .filter((spawn) => {
+        const spawnCircle = new Phaser.Geom.Circle(spawn.x, spawn.y, 24);
+        return !obstacles.some((rect) => Phaser.Geom.Intersects.CircleToRectangle(spawnCircle, rect));
+      })
+      .sort((a, b) => this.nearestPlayerDistance(b.x, b.y, livingPlayers) - this.nearestPlayerDistance(a.x, a.y, livingPlayers))[0] ?? anchor;
+    return new Phaser.Math.Vector2(farthestSpawn.x, farthestSpawn.y);
+  }
+
+  private nearestPlayerDistance(x: number, y: number, players: PlayerTarget[]): number {
+    if (players.length === 0) return Number.POSITIVE_INFINITY;
+    return Math.min(...players.map((player) => Phaser.Math.Distance.Between(x, y, player.x, player.y)));
   }
 
   private configureEnemy(enemy: EnemySprite, definition: EnemyDefinition, wave: ReturnType<typeof createWave>): void {
@@ -1251,7 +1569,7 @@ export class GameScene extends Phaser.Scene {
   private spawnBoss(wave: ReturnType<typeof createWave>): void {
     if (this.gameOver || !this.bossWave || this.boss?.active) return;
 
-    const spawn = Phaser.Utils.Array.GetRandom(this.room.spawns);
+    const spawn = this.getRandomSpawnPoint(132);
     const boss = this.physics.add.sprite(spawn.x, spawn.y, "boss-butcher") as BossSprite;
     boss.enemyId = this.nextEnemyId++;
     boss.hp = 70 + wave.wave * 18;
@@ -1291,15 +1609,17 @@ export class GameScene extends Phaser.Scene {
     this.enemiesAlive += 1;
     this.boss = boss;
     this.cameras.main.flash(180, 120, 36, 26);
+    this.playSfx("boss");
     this.updateBossHud();
   }
 
   private spawnSplitterBoss(wave: ReturnType<typeof createWave>): void {
     if (this.gameOver || !this.splitterBossWave) return;
 
-    const spawn = Phaser.Utils.Array.GetRandom(this.room.spawns);
+    const spawn = this.getRandomSpawnPoint(132);
     this.spawnSplitterBossCopy(spawn.x, spawn.y, 120 + wave.wave * 20, 1);
     this.cameras.main.flash(220, 80, 64, 170);
+    this.playSfx("boss");
     this.updateBossHud();
   }
 
@@ -1430,6 +1750,7 @@ export class GameScene extends Phaser.Scene {
 
   private hitEnemy(bullet: BulletSprite, enemy: EnemySprite): void {
     enemy.hp -= bullet.damage;
+    this.playSfx("enemyHit");
     enemy.setTexture(enemy.hitTexture);
     if (this.currentWeapon.knockback) {
       const knockbackAngle = Phaser.Math.Angle.Between(this.player.x, this.player.y, enemy.x, enemy.y);
@@ -1466,6 +1787,7 @@ export class GameScene extends Phaser.Scene {
   private killEnemy(enemy: EnemySprite): void {
     if (enemy.deathHandled) return;
     enemy.deathHandled = true;
+    this.playSfx("enemyDeath");
     this.score += enemy.reward;
     this.enemiesAlive = Math.max(0, this.enemiesAlive - 1);
     this.add.image(enemy.x, enemy.y, "decal-stain").setDepth(0.18).setAlpha(0.65).setRotation(Math.random() * Math.PI);
@@ -1595,17 +1917,15 @@ export class GameScene extends Phaser.Scene {
       ]
     };
 
+    const scaleX = this.room.width / BASE_ROOM_WIDTH;
+    const scaleY = this.room.height / BASE_ROOM_HEIGHT;
     for (const item of dressingByRoom[this.room.key] ?? []) {
       this.add
-        .image(item.x, item.y, item.texture)
+        .image(item.x * scaleX, item.y * scaleY, item.texture)
         .setDepth(item.texture.startsWith("prop") ? 0.25 : 0.15)
         .setRotation(item.rotation ?? 0)
-        .setAlpha(item.alpha ?? 1);
-    }
-
-    for (const spawn of this.room.spawns) {
-      this.add.rectangle(spawn.x, spawn.y, 42, 42, 0x1a1a15, 0.42).setDepth(0.12);
-      this.add.rectangle(spawn.x, spawn.y, 28, 28, 0x312f27, 0.42).setDepth(0.13);
+        .setAlpha(item.alpha ?? 1)
+        .setScale(Math.min(scaleX, scaleY));
     }
   }
 
@@ -1636,10 +1956,10 @@ export class GameScene extends Phaser.Scene {
 
     if (pickup.kind === "weapon" && pickup.weaponKey) {
       const weapon = getWeapon(pickup.weaponKey);
-      this.equipWeapon(weapon);
       this.addAmmo(weapon.key, weapon.clipPickup);
     }
 
+    this.playSfx("pickup");
     pickup.destroy();
   }
 
@@ -1673,6 +1993,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private explodeAt(x: number, y: number, radius: number, damage: number): void {
+    this.playSfx("explosion");
     const flash = this.add.circle(x, y, radius, 0xf25b38, 0.26);
     this.tweens.add({
       targets: flash,
@@ -1764,6 +2085,7 @@ export class GameScene extends Phaser.Scene {
 
   private damagePlayer(amount: number): void {
     this.health = Math.max(0, this.health - amount);
+    this.playSfx("playerHit");
     this.player.setTint(0xff7777);
     const knockback = velocityFromAngle(this.aimAngle + Math.PI, 84);
     this.player.setVelocity(this.player.body!.velocity.x + knockback.x, this.player.body!.velocity.y + knockback.y);

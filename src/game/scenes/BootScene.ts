@@ -37,64 +37,76 @@ export class BootScene extends Phaser.Scene {
 
   private makeFloorTile(): void {
     const graphics = this.add.graphics();
-    graphics.fillStyle(0x25251f, 1);
+    graphics.fillStyle(0xe7dcc7, 1);
     graphics.fillRect(0, 0, 64, 64);
-    graphics.lineStyle(1, 0x32322a, 0.72);
+    graphics.lineStyle(1, 0xd8ccb6, 0.5);
     graphics.strokeRect(0.5, 0.5, 63, 63);
-    graphics.lineStyle(1, 0x191913, 0.45);
-    graphics.lineBetween(0, 63, 64, 63);
-    graphics.fillStyle(0x303028, 0.65);
-    graphics.fillRect(8, 10, 18, 2);
-    graphics.fillRect(42, 36, 12, 2);
-    graphics.fillStyle(0x171711, 0.55);
-    graphics.fillRect(30, 18, 4, 4);
-    graphics.fillRect(56, 54, 3, 3);
+    graphics.fillStyle(0xd8cbb5, 0.42);
+    graphics.fillEllipse(12, 48, 26, 10);
+    graphics.fillEllipse(49, 15, 18, 8);
+    graphics.fillStyle(0xf2eadc, 0.38);
+    graphics.fillEllipse(32, 34, 20, 7);
     graphics.generateTexture("floor-tile", 64, 64);
     graphics.destroy();
   }
 
   private makeConcreteWall(): void {
     const graphics = this.add.graphics();
-    graphics.fillStyle(0x38372f, 1);
-    graphics.fillRect(0, 0, 48, 48);
-    graphics.fillStyle(0x4b4a3f, 1);
-    graphics.fillRect(0, 0, 48, 12);
-    graphics.fillStyle(0x24231e, 1);
-    graphics.fillRect(0, 39, 48, 9);
-    graphics.lineStyle(2, 0x181713, 0.9);
-    graphics.strokeRect(1, 1, 46, 46);
-    graphics.lineStyle(1, 0x5c5a4d, 0.5);
-    graphics.lineBetween(8, 20, 28, 20);
-    graphics.lineBetween(26, 31, 42, 31);
-    graphics.fillStyle(0x2b2a24, 0.8);
-    graphics.fillRect(7, 29, 5, 4);
-    graphics.fillRect(34, 17, 4, 4);
+    this.makeBoxheadBlock(graphics, 0, 0, 48, 48);
     graphics.generateTexture("wall", 48, 48);
     graphics.destroy();
   }
 
+  private makeBoxheadBlock(graphics: Phaser.GameObjects.Graphics, x: number, y: number, width: number, height: number): void {
+    const bevel = Math.min(12, width * 0.22, height * 0.22);
+    graphics.fillStyle(0x111111, 0.22);
+    graphics.fillRect(x + 4, y + 5, width, height);
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillPoints([
+      new Phaser.Geom.Point(x + bevel, y),
+      new Phaser.Geom.Point(x + width - bevel, y),
+      new Phaser.Geom.Point(x + width, y + bevel),
+      new Phaser.Geom.Point(x + width, y + height * 0.58),
+      new Phaser.Geom.Point(x, y + height * 0.58),
+      new Phaser.Geom.Point(x, y + bevel)
+    ], true);
+    graphics.fillStyle(0x8b8b86, 1);
+    graphics.fillPoints([
+      new Phaser.Geom.Point(x, y + height * 0.58),
+      new Phaser.Geom.Point(x + width, y + height * 0.58),
+      new Phaser.Geom.Point(x + width, y + height),
+      new Phaser.Geom.Point(x, y + height)
+    ], true);
+    graphics.lineStyle(2, 0x111111, 0.9);
+    graphics.strokePoints([
+      new Phaser.Geom.Point(x + bevel, y),
+      new Phaser.Geom.Point(x + width - bevel, y),
+      new Phaser.Geom.Point(x + width, y + bevel),
+      new Phaser.Geom.Point(x + width, y + height),
+      new Phaser.Geom.Point(x, y + height),
+      new Phaser.Geom.Point(x, y + bevel)
+    ], true);
+  }
+
   private makePlayer(): void {
     const graphics = this.add.graphics();
-    graphics.fillStyle(0x10100d, 0.35);
-    graphics.fillEllipse(19, 24, 33, 18);
-    graphics.fillStyle(0x23221c, 1);
-    graphics.fillRect(10, 8, 22, 22);
-    graphics.fillStyle(0xe8c65b, 1);
-    graphics.fillRect(12, 6, 18, 16);
-    graphics.fillStyle(0xf4dc91, 1);
-    graphics.fillRect(15, 4, 12, 10);
-    graphics.fillStyle(0x2b2922, 1);
-    graphics.fillRect(26, 13, 20, 7);
-    graphics.fillStyle(0x11110e, 1);
-    graphics.fillRect(43, 15, 8, 3);
-    graphics.fillStyle(0x8e3329, 1);
-    graphics.fillRect(12, 24, 7, 9);
-    graphics.fillRect(24, 24, 7, 9);
-    graphics.fillStyle(0x11110e, 1);
-    graphics.fillRect(18, 8, 3, 3);
-    graphics.fillRect(25, 8, 3, 3);
-    graphics.lineStyle(2, 0x0d0d0b, 1);
-    graphics.strokeRect(10, 8, 22, 22);
+    graphics.fillStyle(0x080808, 0.35);
+    graphics.fillEllipse(22, 28, 36, 16);
+    graphics.fillStyle(0x9d9687, 1);
+    graphics.fillRect(10, 13, 24, 20);
+    graphics.fillStyle(0xe1d4bd, 1);
+    graphics.fillRect(12, 6, 20, 15);
+    graphics.fillStyle(0x2c2925, 1);
+    graphics.fillRect(12, 4, 20, 6);
+    graphics.fillStyle(0x303030, 1);
+    graphics.fillRect(27, 16, 22, 7);
+    graphics.fillStyle(0x111111, 1);
+    graphics.fillRect(46, 18, 9, 3);
+    graphics.fillStyle(0x383a40, 1);
+    graphics.fillRect(12, 30, 8, 8);
+    graphics.fillRect(25, 30, 8, 8);
+    graphics.lineStyle(2, 0x171717, 1);
+    graphics.strokeRect(10, 13, 24, 20);
     graphics.generateTexture("player", 54, 40);
     graphics.destroy();
   }
@@ -179,26 +191,25 @@ export class BootScene extends Phaser.Scene {
 
   private makeZombie(key: string, skin: number, darkSkin: number, clothes: number): void {
     const graphics = this.add.graphics();
-    graphics.fillStyle(0x10100d, 0.32);
-    graphics.fillEllipse(18, 25, 32, 18);
+    graphics.fillStyle(0x080808, 0.34);
+    graphics.fillEllipse(20, 28, 34, 15);
     graphics.fillStyle(clothes, 1);
-    graphics.fillRect(9, 10, 22, 21);
+    graphics.fillRect(9, 13, 24, 20);
     graphics.fillStyle(skin, 1);
-    graphics.fillRect(12, 5, 16, 14);
+    graphics.fillRect(12, 6, 18, 14);
+    graphics.fillStyle(0x1b1b1b, 1);
+    graphics.fillRect(12, 4, 18, 5);
     graphics.fillStyle(darkSkin, 1);
-    graphics.fillRect(8, 15, 8, 7);
-    graphics.fillRect(27, 18, 8, 7);
-    graphics.fillStyle(0x2b3525, 1);
-    graphics.fillRect(13, 28, 7, 8);
-    graphics.fillRect(23, 27, 7, 9);
-    graphics.fillStyle(0x1a1a15, 1);
-    graphics.fillRect(16, 9, 3, 3);
-    graphics.fillRect(24, 9, 3, 3);
-    graphics.fillStyle(0x722b2a, 0.8);
-    graphics.fillRect(11, 22, 7, 3);
-    graphics.fillRect(24, 13, 5, 3);
-    graphics.lineStyle(2, 0x11110d, 1);
-    graphics.strokeRect(9, 10, 22, 21);
+    graphics.fillRect(7, 17, 8, 6);
+    graphics.fillRect(29, 17, 8, 6);
+    graphics.fillStyle(0x2a2b2c, 1);
+    graphics.fillRect(12, 31, 7, 7);
+    graphics.fillRect(24, 31, 7, 7);
+    graphics.fillStyle(0xb0172b, 0.9);
+    graphics.fillRect(10, 24, 9, 3);
+    graphics.fillRect(25, 16, 5, 3);
+    graphics.lineStyle(2, 0x111111, 1);
+    graphics.strokeRect(9, 13, 24, 20);
     graphics.generateTexture(key, 42, 40);
     graphics.destroy();
   }
@@ -275,18 +286,20 @@ export class BootScene extends Phaser.Scene {
 
   private makeBarrel(): void {
     const graphics = this.add.graphics();
-    graphics.fillStyle(0x17110f, 0.35);
-    graphics.fillEllipse(18, 23, 32, 15);
-    graphics.fillStyle(0x9d2e25, 1);
-    graphics.fillRect(6, 5, 24, 26);
-    graphics.fillStyle(0xcc4b35, 1);
-    graphics.fillRect(9, 5, 8, 26);
-    graphics.fillStyle(0x572019, 1);
-    graphics.fillRect(6, 9, 24, 4);
-    graphics.fillRect(6, 23, 24, 4);
-    graphics.lineStyle(2, 0x2c100d, 1);
-    graphics.strokeRect(6, 5, 24, 26);
-    graphics.generateTexture("barrel", 36, 36);
+    graphics.fillStyle(0x111111, 0.28);
+    graphics.fillEllipse(20, 27, 34, 14);
+    graphics.fillStyle(0x9f9f9b, 1);
+    graphics.fillRect(6, 8, 28, 20);
+    graphics.fillStyle(0xd7d7d2, 1);
+    graphics.fillEllipse(20, 8, 28, 12);
+    graphics.fillStyle(0x343434, 1);
+    graphics.fillEllipse(20, 6, 22, 9);
+    graphics.fillStyle(0xb0172b, 1);
+    graphics.fillRect(6, 19, 28, 4);
+    graphics.lineStyle(2, 0x242424, 1);
+    graphics.strokeEllipse(20, 8, 28, 12);
+    graphics.strokeRect(6, 8, 28, 20);
+    graphics.generateTexture("barrel", 40, 38);
     graphics.destroy();
   }
 
@@ -433,15 +446,14 @@ export class BootScene extends Phaser.Scene {
 
   private makeCrate(): void {
     const graphics = this.add.graphics();
-    graphics.fillStyle(0x6b4b31, 1);
-    graphics.fillRect(0, 0, 38, 38);
-    graphics.fillStyle(0x8a6744, 1);
-    graphics.fillRect(4, 4, 30, 7);
-    graphics.fillRect(4, 27, 30, 7);
-    graphics.lineStyle(2, 0x2d1b12, 1);
-    graphics.strokeRect(1, 1, 36, 36);
-    graphics.lineBetween(5, 5, 33, 33);
-    graphics.lineBetween(33, 5, 5, 33);
+    graphics.fillStyle(0x111111, 0.22);
+    graphics.fillRect(5, 7, 32, 26);
+    graphics.fillStyle(0xe2371b, 1);
+    graphics.fillRect(0, 3, 34, 24);
+    graphics.fillStyle(0xff5638, 1);
+    graphics.fillRect(3, 0, 28, 7);
+    graphics.lineStyle(2, 0x7d160c, 1);
+    graphics.strokeRect(0, 3, 34, 24);
     graphics.generateTexture("prop-crate", 38, 38);
     graphics.destroy();
   }
@@ -459,21 +471,26 @@ export class BootScene extends Phaser.Scene {
 
   private makeStain(): void {
     const graphics = this.add.graphics();
-    graphics.fillStyle(0x4d1f1c, 0.42);
-    graphics.fillEllipse(22, 18, 38, 20);
-    graphics.fillEllipse(12, 26, 18, 10);
-    graphics.fillEllipse(34, 9, 12, 8);
-    graphics.generateTexture("decal-stain", 48, 38);
+    graphics.fillStyle(0xb0172b, 0.72);
+    graphics.fillEllipse(38, 28, 70, 28);
+    graphics.fillEllipse(20, 42, 42, 16);
+    graphics.fillEllipse(62, 15, 24, 12);
+    graphics.fillEllipse(78, 34, 18, 10);
+    graphics.fillStyle(0x7e0d20, 0.55);
+    graphics.fillEllipse(48, 31, 46, 15);
+    graphics.fillCircle(9, 25, 4);
+    graphics.fillCircle(87, 18, 3);
+    graphics.generateTexture("decal-stain", 96, 60);
     graphics.destroy();
   }
 
   private makeVent(): void {
     const graphics = this.add.graphics();
-    graphics.fillStyle(0x191914, 1);
+    graphics.fillStyle(0x1f2124, 1);
     graphics.fillRect(0, 0, 42, 26);
-    graphics.fillStyle(0x39382f, 1);
+    graphics.fillStyle(0xd7d7d2, 1);
     graphics.fillRect(3, 3, 36, 20);
-    graphics.lineStyle(2, 0x12120f, 1);
+    graphics.lineStyle(2, 0x111111, 1);
     for (let x = 8; x < 36; x += 7) {
       graphics.lineBetween(x, 5, x - 5, 22);
     }

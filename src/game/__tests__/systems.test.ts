@@ -31,6 +31,14 @@ describe("weapon progression", () => {
     expect(getUnlockedWeapons(6000).map((weapon) => weapon.key)).toContain("railBurst");
     expect(getBestUnlockedWeapon(8000).key).toBe("minigun");
   });
+
+  it("keeps the current gun equipped after collecting a weapon pickup", () => {
+    const gameScene = readFileSync("src/game/scenes/GameScene.ts", "utf8");
+    const weaponPickupBranch = gameScene.match(/if \(pickup\.kind === "weapon" && pickup\.weaponKey\) \{[\s\S]*?\n    \}/)?.[0] ?? "";
+
+    expect(weaponPickupBranch).toContain("this.addAmmo(weapon.key, weapon.clipPickup)");
+    expect(weaponPickupBranch).not.toContain("this.equipWeapon");
+  });
 });
 
 describe("wave scaling", () => {
@@ -67,6 +75,13 @@ describe("enemy progression", () => {
 });
 
 describe("room data", () => {
+  it("uses expanded arena dimensions", () => {
+    for (const room of ROOMS) {
+      expect(room.width).toBeGreaterThan(1440);
+      expect(room.height).toBeGreaterThan(960);
+    }
+  });
+
   it("has spawn points, walls, barrels, and valid start positions", () => {
     for (const room of ROOMS) {
       expect(room.spawns.length).toBeGreaterThanOrEqual(4);
@@ -83,6 +98,57 @@ describe("room data", () => {
         expect(spawn.y).toBeLessThanOrEqual(room.height - 24);
       }
     }
+  });
+
+  it("randomizes enemy spawns without drawing spawn marker boxes", () => {
+    const gameScene = readFileSync("src/game/scenes/GameScene.ts", "utf8");
+
+    expect(gameScene).toContain("getRandomSpawnPoint");
+    expect(gameScene).toContain("MIN_SPAWN_DISTANCE_FROM_PLAYER");
+    expect(gameScene).toContain("getLivingPlayers()");
+    expect(gameScene).not.toContain("this.add.rectangle(spawn.x, spawn.y, 42, 42");
+    expect(gameScene).not.toContain("this.add.rectangle(spawn.x, spawn.y, 28, 28");
+  });
+});
+
+describe("audio feedback", () => {
+  it("creates generated sound effects and music without external assets", () => {
+    const gameScene = readFileSync("src/game/scenes/GameScene.ts", "utf8");
+
+    expect(gameScene).toContain("startMusic");
+    expect(gameScene).toContain("playSfx");
+    expect(gameScene).toContain("AudioContext");
+  });
+
+  it("uses a distinct generated shot profile for every weapon", () => {
+    const gameScene = readFileSync("src/game/scenes/GameScene.ts", "utf8");
+
+    expect(gameScene).toContain("WEAPON_SHOT_SFX");
+    expect(gameScene).toContain("playWeaponShotSfx");
+    for (const weapon of WEAPONS) {
+      expect(gameScene).toContain(`${weapon.key}:`);
+    }
+  });
+});
+
+describe("camera framing", () => {
+  it("zooms the camera in on desktop so the whole arena is not visible at once", () => {
+    const gameScene = readFileSync("src/game/scenes/GameScene.ts", "utf8");
+
+    expect(gameScene).toContain("DESKTOP_CAMERA_ZOOM");
+    expect(gameScene).toContain("const zoom = isMobileViewport ? (isPortrait ? PORTRAIT_CAMERA_ZOOM : MOBILE_CAMERA_ZOOM) : DESKTOP_CAMERA_ZOOM");
+  });
+});
+
+describe("visual direction", () => {
+  it("uses a bright block-arena look with beveled walls and red splatter decals", () => {
+    const bootScene = readFileSync("src/game/scenes/BootScene.ts", "utf8");
+    const gameScene = readFileSync("src/game/scenes/GameScene.ts", "utf8");
+
+    expect(bootScene).toContain("0xe7dcc7");
+    expect(bootScene).toContain("makeBoxheadBlock");
+    expect(bootScene).toContain("0xb0172b");
+    expect(gameScene).toContain("drawBeveledWallBlock");
   });
 });
 
