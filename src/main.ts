@@ -4,7 +4,10 @@ import { GameScene } from "./game/scenes/GameScene";
 import { LobbyScene } from "./game/scenes/LobbyScene";
 import { MenuScene } from "./game/scenes/MenuScene";
 import { ModeScene } from "./game/scenes/ModeScene";
+import { setupInstallPrompt } from "./pwaInstall";
 import "./styles.css";
+
+setupInstallPrompt();
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,

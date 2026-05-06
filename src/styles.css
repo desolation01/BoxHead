@@ -200,6 +200,74 @@ canvas {
   text-align: center;
 }
 
+.install-app {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 7;
+  min-width: 94px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 2px solid #e1b652;
+  background: #2c3128;
+  color: #f7e7b1;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
+}
+
+.install-app.is-hidden,
+.install-help.is-hidden {
+  display: none;
+}
+
+#app:has(.hud:not(.is-hidden)) .install-app {
+  display: none;
+}
+
+.install-app:hover,
+.install-app:focus {
+  outline: none;
+  background: #3a402f;
+}
+
+.install-help {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(10, 10, 9, 0.78);
+}
+
+.install-help__panel {
+  width: min(320px, 100%);
+  padding: 18px;
+  border: 2px solid rgba(244, 236, 210, 0.22);
+  background: #171713;
+  color: #f4ecd2;
+  text-align: center;
+}
+
+.install-help h2 {
+  margin: 0 0 8px;
+  color: #f7e7b1;
+  font-size: 22px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.install-help p {
+  margin: 0;
+  color: #c8c0a6;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
 @media (max-width: 680px) {
   .hud {
     top: max(6px, env(safe-area-inset-top));
@@ -507,6 +575,15 @@ canvas {
 
   .touch-actions {
     gap: 8px;
+  }
+
+  .install-app {
+    right: max(8px, env(safe-area-inset-right));
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    min-width: 78px;
+    min-height: 36px;
+    padding: 7px 10px;
+    font-size: 11px;
   }
 
   .boss-hud {

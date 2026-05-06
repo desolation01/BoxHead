@@ -3,9 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
+    <meta name="theme-color" content="#171713" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Blockhead" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/favicon-64.png" sizes="64x64" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <title>Blockhead: More Arenas</title>
   </head>
   <body>
@@ -50,6 +55,14 @@
           <p>Blockhead is built for wide-screen play on mobile.</p>
         </div>
       </div>
+      <button id="install-app" class="install-app is-hidden" type="button">Install</button>
+      <div id="install-help" class="install-help is-hidden" role="dialog" aria-modal="true" aria-labelledby="install-help-title">
+        <div class="install-help__panel">
+          <h2 id="install-help-title">Install Blockhead</h2>
+          <p data-install-help-copy>Use Share, then Add to Home Screen.</p>
+          <button class="menu__action" type="button" data-install-help-close>OK</button>
+        </div>
+      </div>
       <div id="menu" class="menu"></div>
     </div>
     <script>
@@ -66,15 +79,9 @@
       } catch (_) {}
 
       if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.getRegistrations()
-          .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
-          .catch(() => {});
-      }
-
-      if ("caches" in window) {
-        caches.keys()
-          .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
-          .catch(() => {});
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("/sw.js").catch(function () {});
+        });
       }
     </script>
     <script type="module" src="/src/main.ts"></script>
